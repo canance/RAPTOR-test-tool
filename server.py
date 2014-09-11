@@ -16,7 +16,6 @@ import os
 from threading import Thread
 
 HOST = ''
-PORT = 10005
 SOCKETSIZE = 1024
 
 
@@ -66,7 +65,7 @@ class RaptorConnection(Thread):
 
     def handletest(self, dir):
         name = os.path.split(dir)[1]
-        with open(dir + '/in', 'r') as f:
+        with open(dir + '/in.txt', 'r') as f:
             data = f.readlines()
             for line in data:
                 self.conn.sendall(line.replace('\n', '\r\n'))
@@ -87,7 +86,7 @@ class RaptorConnection(Thread):
 
         correct = True
 
-        with open(dir + '/out', 'r') as f:
+        with open(dir + '/out.txt', 'r') as f:
             data = f.readline()
             i = 0
             for line in data:
@@ -142,10 +141,17 @@ class RaptorConnection(Thread):
 
 def main():
     parser = argparse.ArgumentParser(description="A test server for RAPTOR.")
-    parser.add_argument('-p', '--path', metavar='FolderPath', type=str, help='Path to RAPTOR test directories.')
+    parser.add_argument('-p', '--path', metavar='folderpath', type=str, help='Path to RAPTOR assignments directory.')
+    parser.add_argument('--port', metavar='port', type=int, help='Port number to host server from.  By default the port is 10000.')
+
+
     args = parser.parse_args()
 
     path = args.path
+    port = args.port
+
+    if not port:
+        port = 10000
 
     while not path:
         print "Please enter the path to the RAPTOR test directory.  Press enter to use the current directory."
@@ -161,7 +167,7 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = (HOST, PORT)
+    server_address = (HOST, port)
     print >> sys.stderr, 'starting up on %s port %s' % server_address
     sock.bind(server_address)
 
