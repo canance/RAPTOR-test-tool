@@ -39,8 +39,12 @@ class RaptorConnection(Thread):
 
 
     def handledata(self, data):
+        """
+        Handles incoming data from a thread's connection
+        :param data: string of data
+        :return:
+        """
         data = data.strip().lower()
-        # switch(data)
         if not data:
             return
         if data == 'directory':
@@ -52,6 +56,11 @@ class RaptorConnection(Thread):
 
 
     def filename(self, data):
+        """
+        Handles the case that RAPTOR requests a filename/assignment
+        :param data: string representing the filename
+        :return:
+        """
         fpath = "%s/%s" % (self.path, data.lower())
         if not os.path.isdir(fpath):
             self.conn.sendall("INVALID COMMAND OR ASSIGNMENT\r\n")
@@ -64,7 +73,13 @@ class RaptorConnection(Thread):
 
 
     def handletest(self, dir):
+        """
+        Handles giving the tests associated with an assignment.
+        :param dir: string representing the directory of the assignment
+        :return:
+        """
         name = os.path.split(dir)[1]
+        #send test data from in.txt
         with open(dir + '/in.txt', 'r') as f:
             data = f.readlines()
             for line in data:
@@ -74,7 +89,7 @@ class RaptorConnection(Thread):
         data = ''
         resp = []
         done = False
-
+        #recieve test data response until EOF is reached
         while not done:
             data = self.conn.recv(SOCKETSIZE)
             for s in data.split('\r\n'):
@@ -84,8 +99,8 @@ class RaptorConnection(Thread):
                 if s.strip():
                     resp.append(s.strip())
 
+        #compare RAPTOR response with out.txt
         correct = True
-
         with open(dir + '/out.txt', 'r') as f:
             data = f.readline()
             i = 0
@@ -103,6 +118,11 @@ class RaptorConnection(Thread):
 
     @staticmethod
     def countdirs(path):
+        """
+        Count's the number of directories in a path.  Excludes files and '.' files/dirs
+        :param path: string representing the directory to count from
+        :return: count
+        """
         files = os.listdir(path)
         count = 0
         for f in files:
@@ -115,6 +135,11 @@ class RaptorConnection(Thread):
 
     @staticmethod
     def getdirs(path):
+        """
+        Creates a list of subdirectories in a path
+        :param path: string representing directory to list from
+        :return: list of subdirecories
+        """
         ret = []
         files = os.listdir(path)
         for f in files:
@@ -140,11 +165,12 @@ class RaptorConnection(Thread):
 
 
 def main():
+    #setup arg parser
     parser = argparse.ArgumentParser(description="A test server for RAPTOR.")
     parser.add_argument('-p', '--path', metavar='folderpath', type=str, help='Path to RAPTOR assignments directory.')
     parser.add_argument('--port', metavar='port', type=int, help='Port number to host server from.  By default the port is 10000.')
 
-
+    print >> sys.stderr, "-->To quit press ctrl-c"
     args = parser.parse_args()
 
     path = args.path
@@ -178,6 +204,7 @@ def main():
         while True:
             # Wait for a connection
             connection, client_address = sock.accept()
+            #create and start a new thread to handle the connection
             rc = RaptorConnection(connection, client_address, path)
             rc.start()
     except KeyboardInterrupt:
