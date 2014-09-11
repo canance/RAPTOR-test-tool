@@ -16,11 +16,11 @@ import os
 from threading import Thread
 
 HOST = ''
-PORT = 10001
+PORT = 10005
 SOCKETSIZE = 1024
 
-class RaptorConnection(Thread):
 
+class RaptorConnection(Thread):
     def __init__(self, conn, caddress, path):
         self.conn = conn
         self.caddress = caddress
@@ -29,12 +29,11 @@ class RaptorConnection(Thread):
 
     def run(self):
         try:
-            print >>sys.stderr, 'connection from', self.caddress
-            while True:
-                data = self.conn.recv(SOCKETSIZE)
-                if data:
-                    print "%s: %s" % (self.caddress[0], data)
-                    self.handledata(data)
+            print >> sys.stderr, 'connection from', self.caddress
+            data = self.conn.recv(SOCKETSIZE)
+            if data:
+                print >> sys.stderr, "%s: %s" % (self.caddress[0], data)
+                self.handledata(data)
         finally:
             # Clean up the connection
             self.conn.close()
@@ -42,7 +41,7 @@ class RaptorConnection(Thread):
 
     def handledata(self, data):
         data = data.strip().lower()
-        #switch(data)
+        # switch(data)
         if not data:
             return
         if data == 'directory':
@@ -54,17 +53,81 @@ class RaptorConnection(Thread):
 
 
     def filename(self, data):
-        fpath = "%s/%s" % (self.path, data)
+        fpath = "%s/%s" % (self.path, data.lower())
         if not os.path.isdir(fpath):
             self.conn.sendall("INVALID COMMAND OR ASSIGNMENT\r\n")
             return
+        # valid test folder
+        self.conn.sendall('%d\r\n' % RaptorConnection.countdirs(fpath))
 
+        for dir in RaptorConnection.getdirs(fpath):
+            self.handletest(dir)
+
+
+    def handletest(self, dir):
+        name = os.path.split(dir)[1]
+        with open(dir + '/in', 'r') as f:
+            data = f.readlines()
+            for line in data:
+                self.conn.sendall(line.replace('\n', '\r\n'))
+            self.conn.sendall('EOF\r\n')
+
+        data = ''
+        resp = []
+        done = False
+
+        while not done:
+            data = self.conn.recv(SOCKETSIZE)
+            for s in data.split('\r\n'):
+                if s.lower() == 'eof':
+                    done = True
+                    break
+                if s.strip():
+                    resp.append(s.strip())
+
+        correct = True
+
+        with open(dir + '/out', 'r') as f:
+            data = f.readline()
+            i = 0
+            for line in data:
+                if not line.strip():
+                    continue
+                try:
+                    if line != resp[i]:
+                        correct = False
+                except:
+                    correct = False
+                i += 1
+        correct = "CORRECT" if correct else "INCORRECT"
+        self.conn.sendall(correct + '\r\n')
+
+    @staticmethod
+    def countdirs(path):
+        files = os.listdir(path)
+        count = 0
+        for f in files:
+            if f[:1] == '.':
+                continue
+            if not os.path.isdir(path + '/' + f):
+                continue
+            count += 1
+        return count
+
+    @staticmethod
+    def getdirs(path):
+        ret = []
+        files = os.listdir(path)
+        for f in files:
+            if f[:1] == '.':
+                continue
+            if not os.path.isdir(path + '/' + f):
+                continue
+            ret.append(path + '/' + f)
+        return ret
 
     def directory(self):
         files = os.listdir(self.path)
-
-
-
         for f in files:
             if f[:1] == '.':
                 continue
@@ -75,6 +138,7 @@ class RaptorConnection(Thread):
 
     def pong(self):
         self.conn.sendall('PONG!\r\n')
+
 
 def main():
     parser = argparse.ArgumentParser(description="Compile, test, and grade Java files submitted via Moodle.")
@@ -98,7 +162,7 @@ def main():
 
     # Bind the socket to the port
     server_address = (HOST, PORT)
-    print >>sys.stderr, 'starting up on %s port %s' % server_address
+    print >> sys.stderr, 'starting up on %s port %s' % server_address
     sock.bind(server_address)
 
     # Listen for incoming connections
@@ -107,7 +171,6 @@ def main():
     try:
         while True:
             # Wait for a connection
-            print >>sys.stderr, 'waiting for a connection'
             connection, client_address = sock.accept()
             rc = RaptorConnection(connection, client_address, path)
             rc.start()
@@ -115,7 +178,6 @@ def main():
         pass
     finally:
         sock.close()
-
 
 
 if __name__ == '__main__':
