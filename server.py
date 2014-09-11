@@ -102,13 +102,13 @@ class RaptorConnection(Thread):
         #compare RAPTOR response with out.txt
         correct = True
         with open(dir + '/out.txt', 'r') as f:
-            data = f.readline()
+            data = f.readlines()
             i = 0
             for line in data:
                 if not line.strip():
                     continue
                 try:
-                    if line != resp[i]:
+                    if line.strip() != resp[i]:
                         correct = False
                 except:
                     correct = False
