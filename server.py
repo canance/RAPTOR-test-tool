@@ -141,7 +141,7 @@ class RaptorConnection(Thread):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compile, test, and grade Java files submitted via Moodle.")
+    parser = argparse.ArgumentParser(description="A test server for RAPTOR.")
     parser.add_argument('-p', '--path', metavar='FolderPath', type=str, help='Path to RAPTOR test directories.')
     args = parser.parse_args()
 
