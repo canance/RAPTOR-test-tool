@@ -22,11 +22,14 @@ there can be multiple test directories.  Each test directory must contain an 'in
 Each line of the 'in.txt' represents an input in RAPTOR; and each line of the 'out.txt' file represents an output in RAPTOR.
 
 *NOTE: RAPTOR requires that a client's filename be the same as the assignment name.  For example:
+
         Assignment:  lab1
+
         RAPTOR file: lab1.rap
         
 For an example try using the tests directory for your path and run it against a simple RAPTOR flowchart 
 consisting of 2 inputs and print the sum.
 
-Example:
+Example that will run server on port 10000:
 python server.py --path tests/
+
