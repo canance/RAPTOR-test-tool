@@ -1,4 +1,4 @@
-RAPTOR_Test_Tool
+RAPTOR Test Tool
 ================
 
 Python implementation of a test server for RAPTOR programming.
